@@ -1,6 +1,7 @@
 package luogusdk
 
 import (
+	"errors"
 	"math"
 	"net"
 	"time"
@@ -11,13 +12,20 @@ func defaultBackoff(attempt int) time.Duration {
 	return time.Duration(math.Pow(2, float64(attempt))) * time.Second
 }
 
-// shouldRetry 判断错误是否应该重试（仅网络错误，不重试业务错误）
+// shouldRetry 判断错误是否应该重试（网络超时、DNS 错误等临时错误）
 func shouldRetry(err error) bool {
 	if err == nil {
 		return false
 	}
-	if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-		return true
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		if netErr.Timeout() {
+			return true
+		}
+	}
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return true // DNS 错误通常是临时的，值得重试
 	}
 	return false
 }

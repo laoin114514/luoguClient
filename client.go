@@ -2,6 +2,7 @@ package luogusdk
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -103,8 +104,8 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 }
 
 // newRequest 创建带默认请求头的 HTTP 请求
-func (c *Client) newRequest(method, path string, body interface{}) (*http.Request, error) {
-	url := luoguBaseURL + strings.TrimPrefix(path, "/")
+func (c *Client) newRequest(ctx context.Context, method, path string, body interface{}) (*http.Request, error) {
+	urlStr := luoguBaseURL + strings.TrimPrefix(path, "/")
 
 	var bodyReader io.Reader
 	if body != nil {
@@ -115,7 +116,7 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 		bodyReader = bytes.NewReader(data)
 	}
 
-	req, err := http.NewRequest(method, url, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, urlStr, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -137,17 +138,27 @@ func (c *Client) newRequest(method, path string, body interface{}) (*http.Reques
 func (c *Client) do(req *http.Request) (*http.Response, error) {
 	var lastErr error
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+		// 重试时重置请求体（POST 等带 body 的请求，body reader 已被上一轮消费）
+		if attempt > 0 && req.Body != nil && req.GetBody != nil {
+			body, err := req.GetBody()
+			if err != nil {
+				return nil, &NetworkError{Err: fmt.Errorf("reset request body for retry: %w", err)}
+			}
+			req.Body = body
+		}
+
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
 			if shouldRetry(err) && attempt < c.maxRetries {
-				time.Sleep(c.backoffFn(attempt))
 				lastErr = err
+				time.Sleep(c.backoffFn(attempt))
 				continue
 			}
 			return nil, &NetworkError{Err: err}
 		}
 
 		if shouldRetryStatus(resp.StatusCode) && attempt < c.maxRetries {
+			lastErr = fmt.Errorf("server error: HTTP %d", resp.StatusCode)
 			resp.Body.Close()
 			time.Sleep(c.backoffFn(attempt))
 			continue
@@ -159,8 +170,8 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 }
 
 // get 发送 GET 请求
-func (c *Client) get(path string) (*http.Response, error) {
-	req, err := c.newRequest("GET", path, nil)
+func (c *Client) get(ctx context.Context, path string) (*http.Response, error) {
+	req, err := c.newRequest(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -168,17 +179,16 @@ func (c *Client) get(path string) (*http.Response, error) {
 }
 
 // post 发送 POST 请求
-func (c *Client) post(path string, body interface{}) (*http.Response, error) {
-	req, err := c.newRequest("POST", path, body)
+func (c *Client) post(ctx context.Context, path string, body interface{}) (*http.Response, error) {
+	req, err := c.newRequest(ctx, "POST", path, body)
 	if err != nil {
 		return nil, err
 	}
 	return c.do(req)
 }
 
-// parseBody 解析响应体 JSON
+// parseBody 解析响应体 JSON（调用方负责关闭 resp.Body）
 func parseBody(resp *http.Response, v interface{}) error {
-	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("read response body: %w", err)
@@ -193,9 +203,8 @@ func parseBody(resp *http.Response, v interface{}) error {
 	return nil
 }
 
-// parseLentilleContext 从 HTML 页面中提取 <script id="lentille-context"> 内的 JSON 数据
+// parseLentilleContext 从 HTML 页面中提取 <script id="lentille-context"> 内的 JSON 数据（调用方负责关闭 resp.Body）
 func parseLentilleContext(resp *http.Response, v interface{}) error {
-	defer resp.Body.Close()
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
@@ -214,8 +223,8 @@ func parseLentilleContext(resp *http.Response, v interface{}) error {
 }
 
 // refreshCSRF 从首页获取 CSRF token
-func (c *Client) refreshCSRF() error {
-	resp, err := c.get("/")
+func (c *Client) refreshCSRF(ctx context.Context) error {
+	resp, err := c.get(ctx, "/")
 	if err != nil {
 		return &CSRFError{Err: err}
 	}
@@ -235,14 +244,14 @@ func (c *Client) refreshCSRF() error {
 	return nil
 }
 
-// setCSRF 手动设置 CSRF token（用于测试）
-func (c *Client) setCSRF(token string) {
+// SetCSRF 手动设置 CSRF token（用于已知 token 时跳过 RefreshCSRF）
+func (c *Client) SetCSRF(token string) {
 	c.csrfToken = token
 }
 
 // verifyAuth 校验当前 cookie 是否仍有效
-func (c *Client) verifyAuth() error {
-	resp, err := c.get("/api/user/current")
+func (c *Client) verifyAuth(ctx context.Context) error {
+	resp, err := c.get(ctx, "/api/user/current")
 	if err != nil {
 		return err
 	}

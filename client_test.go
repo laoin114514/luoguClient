@@ -1,6 +1,7 @@
 package luogusdk
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +19,7 @@ func TestClientNewRequestHeaders(t *testing.T) {
 		httpClient: &http.Client{Jar: jar},
 	}
 
-	req, err := c.newRequest("POST", "/test", map[string]string{"key": "value"})
+	req, err := c.newRequest(context.Background(), "POST", "/test", map[string]string{"key": "value"})
 	if err != nil {
 		t.Fatalf("newRequest: %v", err)
 	}
@@ -48,7 +49,7 @@ func TestClientNewRequestNoCSRFForGET(t *testing.T) {
 		httpClient: &http.Client{Jar: jar},
 	}
 
-	req, err := c.newRequest("GET", "/test", nil)
+	req, err := c.newRequest(context.Background(), "GET", "/test", nil)
 	if err != nil {
 		t.Fatalf("newRequest: %v", err)
 	}

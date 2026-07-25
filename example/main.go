@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -26,18 +27,19 @@ func main() {
 	fmt.Printf("Cookie 文件路径: %s\n", client.Auth.CookiePath())
 
 	// 2. 检查是否已经登录
-	if client.Auth.IsAuthenticated() {
+	ctx := context.Background()
+	if client.Auth.IsAuthenticated(ctx) {
 		fmt.Println("已登录（通过持久化 cookie 恢复）")
 	} else {
 		fmt.Println("未登录，开始登录流程...")
 
-		if err := client.Auth.RefreshCSRF(); err != nil {
+		if err := client.Auth.RefreshCSRF(ctx); err != nil {
 			fmt.Printf("获取 CSRF token 失败: %v\n", err)
 			os.Exit(1)
 		}
 		fmt.Println("✓ CSRF token 获取成功")
 
-		result, err := client.Auth.LoginWithSolver(username, password, captchaByHand)
+		result, err := client.Auth.LoginWithSolver(ctx, username, password, captchaByHand)
 		if err != nil {
 			fmt.Printf("登录失败: %v\n", err)
 			os.Exit(1)
@@ -48,7 +50,7 @@ func main() {
 
 	// 3. 获取题目示例
 	fmt.Println("\n--- 获取题目 P1001 ---")
-	problem, err := client.Problem.Get("P1001")
+	problem, err := client.Problem.Get(ctx, "P1001")
 	if err != nil {
 		fmt.Printf("获取题目失败: %v\n", err)
 	} else {
@@ -66,20 +68,21 @@ func main() {
 
 	// 4. 搜索题目示例
 	fmt.Println("\n--- 搜索题目 (关键词: 排序) ---")
-	results, err := client.Problem.Search(luoguSDK.SearchParams{
+	results, err := client.Problem.Search(ctx, luoguSDK.SearchParams{
 		Keyword:  "排序",
 		Page:     1,
-		PageSize: 5,
+		PageSize: 20,
 	})
 	if err != nil {
 		fmt.Printf("搜索失败: %v\n", err)
 	} else {
-		fmt.Printf("共 %d 个结果，当前第 %d 页:\n", results.Total, results.Page)
+		fmt.Printf("共 %d 个结果，当前第 %d 页 (每页 %d):\n", results.Total, results.Page, results.PerPage)
 		for _, p := range results.Problems {
 			fmt.Printf("  %s - %s (难度: %d)\n", p.PID, p.Title, p.Difficulty)
 		}
 	}
 }
+
 func captchaByHand(image []byte) (string, error) {
 	if err := os.WriteFile("captcha.jpg", image, 0644); err != nil {
 		return "", fmt.Errorf("保存验证码图片失败: %w", err)
