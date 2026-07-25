@@ -9,7 +9,7 @@ import (
 )
 
 func TestClientNewRequestHeaders(t *testing.T) {
-	jar, _ := newExportableCookieJar()
+	jar, _ := newExportableCookieJar("")
 	c := &Client{
 		cookieJar:  jar,
 		csrfToken:  "test-csrf-token",
@@ -39,7 +39,7 @@ func TestClientNewRequestHeaders(t *testing.T) {
 }
 
 func TestClientNewRequestNoCSRFForGET(t *testing.T) {
-	jar, _ := newExportableCookieJar()
+	jar, _ := newExportableCookieJar("")
 	c := &Client{
 		cookieJar:  jar,
 		csrfToken:  "test-csrf-token",
@@ -67,7 +67,7 @@ func TestClientNoRetryOn4xx(t *testing.T) {
 	}))
 	defer server.Close()
 
-	jar, _ := newExportableCookieJar()
+	jar, _ := newExportableCookieJar("")
 	c := &Client{
 		cookieJar:  jar,
 		maxRetries: 3,
@@ -93,7 +93,7 @@ func TestClientRetryOn5xx(t *testing.T) {
 	}))
 	defer server.Close()
 
-	jar, _ := newExportableCookieJar()
+	jar, _ := newExportableCookieJar("")
 	c := &Client{
 		cookieJar:  jar,
 		maxRetries: 2,

@@ -80,13 +80,18 @@ func (a *AuthService) LoginWithSolver(ctx context.Context, username, password st
 	return a.Login(ctx, username, password, captcha)
 }
 
-// Logout 登出当前会话
+// Logout 登出当前会话并清除持久化的 cookie
 func (a *AuthService) Logout(ctx context.Context) error {
 	resp, err := a.client.post(ctx, "/auth/logout", nil)
 	if err != nil {
 		return err
 	}
 	resp.Body.Close()
+
+	// 登出后清除本地 cookie
+	if err := a.client.clearCookies(); err != nil {
+		return fmt.Errorf("clear cookies: %w", err)
+	}
 	return nil
 }
 
@@ -103,6 +108,11 @@ func (a *AuthService) IsAuthenticated(ctx context.Context) bool {
 // SaveCookies 手动持久化当前 cookie 到文件
 func (a *AuthService) SaveCookies() error {
 	return a.client.saveCookiesToFile()
+}
+
+// DeleteSavedCookies 清空 cookie 并删除持久化文件
+func (a *AuthService) DeleteSavedCookies() error {
+	return a.client.clearCookies()
 }
 
 // CookiePath 返回 cookie 持久化文件的路径

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 )
 
 const defaultUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0"
+const luoguBaseURL = "https://www.luogu.com.cn/"
 
 // Client 洛谷 SDK 客户端
 type Client struct {
@@ -66,14 +68,14 @@ func WithUserAgent(ua string) ClientOption {
 
 // NewClient 创建新的洛谷客户端
 func NewClient(opts ...ClientOption) (*Client, error) {
-	jar, err := newExportableCookieJar()
-	if err != nil {
-		return nil, fmt.Errorf("create cookie jar: %w", err)
-	}
-
 	cookiePath, err := defaultCookiePath()
 	if err != nil {
-		cookiePath = "luogu_cookies.json"
+		cookiePath = filepath.Join(os.TempDir(), "luogu_cookies.json")
+	}
+
+	jar, err := newExportableCookieJar(cookiePath)
+	if err != nil {
+		return nil, fmt.Errorf("create cookie jar: %w", err)
 	}
 
 	c := &Client{
@@ -91,6 +93,9 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	for _, opt := range opts {
 		opt(c)
 	}
+
+	// 如果用户通过 WithCookieFile 改了路径，同步到 jar
+	jar.setSavePath(c.cookieFile)
 
 	c.Auth = &AuthService{client: c}
 	c.Problem = &ProblemService{client: c}
@@ -281,4 +286,9 @@ func (c *Client) verifyAuth(ctx context.Context) error {
 // saveCookiesToFile 持久化当前 cookie
 func (c *Client) saveCookiesToFile() error {
 	return saveCookies(c.cookieJar, c.cookieFile)
+}
+
+// clearCookies 清空 cookie 并删除持久化文件
+func (c *Client) clearCookies() error {
+	return c.cookieJar.Clear()
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func TestExportableCookieJarRoundTrip(t *testing.T) {
-	jar, err := newExportableCookieJar()
+	jar, err := newExportableCookieJar("")
 	if err != nil {
 		t.Fatalf("create jar: %v", err)
 	}
@@ -24,7 +24,7 @@ func TestExportableCookieJarRoundTrip(t *testing.T) {
 		t.Fatalf("export: %v", err)
 	}
 
-	jar2, _ := newExportableCookieJar()
+	jar2, _ := newExportableCookieJar("")
 	if err := jar2.Import(data); err != nil {
 		t.Fatalf("import: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestExportableCookieJarRoundTrip(t *testing.T) {
 }
 
 func TestSaveLoadCookiesToFile(t *testing.T) {
-	jar, _ := newExportableCookieJar()
+	jar, _ := newExportableCookieJar("")
 	u, _ := url.Parse(luoguBaseURL)
 	jar.SetCookies(u, []*http.Cookie{
 		{Name: "_uid", Value: "99999", Domain: ".luogu.com.cn", Path: "/"},
@@ -65,7 +65,7 @@ func TestSaveLoadCookiesToFile(t *testing.T) {
 		t.Fatalf("save: %v", err)
 	}
 
-	jar2, _ := newExportableCookieJar()
+	jar2, _ := newExportableCookieJar("")
 	if err := loadCookies(jar2, filePath); err != nil {
 		t.Fatalf("load: %v", err)
 	}
