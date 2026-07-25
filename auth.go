@@ -58,10 +58,6 @@ func (a *AuthService) Login(ctx context.Context, username, password, captcha str
 		return nil, err
 	}
 
-	if err := a.client.saveCookiesToFile(); err != nil {
-		return nil, fmt.Errorf("save cookies: %w", err)
-	}
-
 	return &result, nil
 }
 
