@@ -75,3 +75,44 @@ func TestSaveLoadCookiesToFile(t *testing.T) {
 		t.Errorf("cookie not restored correctly")
 	}
 }
+
+func TestExportImportHostOnlyCookie(t *testing.T) {
+	jar, _ := newExportableCookieJar("")
+	u, _ := url.Parse(luoguBaseURL)
+	// 模拟服务端无 domain/path 属性的 Set-Cookie（host-only cookie）
+	jar.SetCookies(u, []*http.Cookie{
+		{Name: "_uid", Value: "12345"},
+		{Name: "__client_id", Value: "abc123"},
+	})
+
+	data, err := jar.Export()
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+
+	jar2, _ := newExportableCookieJar("")
+	if err := jar2.Import(data); err != nil {
+		t.Fatalf("import: %v", err)
+	}
+
+	cookies := jar2.Cookies(u)
+	if len(cookies) != 2 {
+		t.Fatalf("expected 2 cookies, got %d", len(cookies))
+	}
+
+	findCookie := func(name string) *http.Cookie {
+		for _, c := range cookies {
+			if c.Name == name {
+				return c
+			}
+		}
+		return nil
+	}
+
+	if c := findCookie("_uid"); c == nil || c.Value != "12345" {
+		t.Error("_uid host-only cookie not restored correctly")
+	}
+	if c := findCookie("__client_id"); c == nil || c.Value != "abc123" {
+		t.Error("__client_id host-only cookie not restored correctly")
+	}
+}

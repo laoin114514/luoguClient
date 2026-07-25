@@ -73,11 +73,19 @@ func (j *ExportableCookieJar) Export() ([]byte, error) {
 	cookies := j.jar.Cookies(u)
 	exported := make([]exportableCookie, 0, len(cookies))
 	for _, c := range cookies {
+		domain := c.Domain
+		if domain == "" {
+			domain = u.Host // host-only cookie，写入时改为显式 host
+		}
+		path := c.Path
+		if path == "" {
+			path = "/"
+		}
 		exported = append(exported, exportableCookie{
 			Name:     c.Name,
 			Value:    c.Value,
-			Domain:   c.Domain,
-			Path:     c.Path,
+			Domain:   domain,
+			Path:     path,
 			Secure:   c.Secure,
 			HttpOnly: c.HttpOnly,
 		})
@@ -96,11 +104,19 @@ func (j *ExportableCookieJar) Import(data []byte) error {
 		return err
 	}
 	for _, c := range cookies {
+		domain := c.Domain
+		if domain == "" {
+			domain = u.Host // 兼容旧文件（domain 为空时回退为 host-only）
+		}
+		path := c.Path
+		if path == "" {
+			path = "/"
+		}
 		j.jar.SetCookies(u, []*http.Cookie{{
 			Name:     c.Name,
 			Value:    c.Value,
-			Domain:   c.Domain,
-			Path:     c.Path,
+			Domain:   domain,
+			Path:     path,
 			Secure:   c.Secure,
 			HttpOnly: c.HttpOnly,
 		}})
