@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -227,9 +228,20 @@ func parseLentilleContext(resp *http.Response, v interface{}) error {
 	return nil
 }
 
+// getSimple 发送 GET 请求，使用非浏览器 UA 以获取服务端渲染的 HTML
+func (c *Client) getSimple(ctx context.Context, path string) (*http.Response, error) {
+	urlStr := luoguBaseURL + strings.TrimPrefix(path, "/")
+	req, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Go-http-client/2.0")
+	return c.do(req)
+}
+
 // refreshCSRF 从首页获取 CSRF token
 func (c *Client) refreshCSRF(ctx context.Context) error {
-	resp, err := c.get(ctx, "/")
+	resp, err := c.getSimple(ctx, "/")
 	if err != nil {
 		return &CSRFError{Err: err}
 	}
@@ -254,33 +266,15 @@ func (c *Client) SetCSRF(token string) {
 	c.csrfToken = token
 }
 
-// verifyAuth 校验当前 cookie 是否仍有效
+// verifyAuth 校验当前 cookie 是否仍有效（检查 _uid cookie 是否存在且非零）
 func (c *Client) verifyAuth(ctx context.Context) error {
-	resp, err := c.get(ctx, "/api/user/current")
-	if err != nil {
-		return err
+	u, _ := url.Parse(luoguBaseURL)
+	for _, ck := range c.cookieJar.Cookies(u) {
+		if ck.Name == "_uid" && ck.Value != "" && ck.Value != "0" {
+			return nil
+		}
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
-		return &UnauthorizedError{}
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("verify auth: unexpected status %d", resp.StatusCode)
-	}
-
-	var result struct {
-		Data struct {
-			UID int `json:"uid"`
-		} `json:"data"`
-	}
-	if err := parseBody(resp, &result); err != nil {
-		return err
-	}
-	if result.Data.UID == 0 {
-		return &UnauthorizedError{}
-	}
-	return nil
+	return &UnauthorizedError{}
 }
 
 // saveCookiesToFile 持久化当前 cookie
