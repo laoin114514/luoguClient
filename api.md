@@ -7,6 +7,9 @@
 - [ProblemService 题目](#problemservice-题目)
 - [RecordService 记录](#recordservice-记录)
 - [TrainingService 题单](#trainingservice-题单)
+- [UserService 用户](#userservice-用户)
+- [DiscussService 讨论](#discussservice-讨论)
+- [ContestService 比赛](#contestservice-比赛)
 - [类型定义](#类型定义)
 - [常量](#常量)
 - [错误类型](#错误类型)
@@ -348,6 +351,138 @@ for _, p := range detail.Problems {
 
 ---
 
+## UserService 用户
+
+### Get
+
+```go
+func (u *UserService) Get(uid int) (*UserDetail, error)
+```
+
+获取用户详情。
+
+```go
+user, _ := client.User.Get(1582049)
+user.Name       // "laoin"
+user.Color      // "Blue"
+user.CCFLevel   // CCF 等级
+user.XCPCLevel  // XCPC 等级
+user.Slogan     // 签名
+```
+
+---
+
+### GetRanking
+
+```go
+func (u *UserService) GetRanking(page int) (*RankingList, error)
+```
+
+获取排名列表。
+
+```go
+ranking, _ := client.User.GetRanking(1)
+ranking.Count  // 总人数
+for _, item := range ranking.Items {
+    item.Rating      // 积分
+    item.User.Name   // 用户名
+    item.User.Color  // 称号颜色
+}
+```
+
+---
+
+## DiscussService 讨论
+
+### GetList
+
+```go
+func (d *DiscussService) GetList(page int) (*DiscussList, error)
+```
+
+获取讨论列表。
+
+```go
+list, _ := client.Discuss.GetList(1)
+list.Count         // 帖子总数
+list.Posts         // []DiscussSummary
+list.PublicForums  // 公开板块列表
+for _, p := range list.Posts {
+    p.ID       // 帖子 ID
+    p.Title    // 标题
+    p.Author.Name
+    p.Time     // 发帖时间
+}
+```
+
+---
+
+### GetDetail
+
+```go
+func (d *DiscussService) GetDetail(id int, page int) (*DiscussDetail, error)
+```
+
+获取讨论详情（含回帖）。
+
+```go
+detail, _ := client.Discuss.GetDetail(241461, 1)
+detail.Post.Title           // 主帖标题
+detail.Post.Content         // 主帖内容（Markdown）
+detail.Count                // 回帖总数
+detail.Forum.Name           // 所属板块
+for _, r := range detail.Replies {
+    r.Content                // 回帖内容
+    r.Author.Name
+}
+```
+
+---
+
+## ContestService 比赛
+
+### GetList
+
+```go
+func (c *ContestService) GetList(page int) (*ContestList, error)
+```
+
+获取比赛列表。
+
+```go
+list, _ := client.Contest.GetList(1)
+list.Count     // 比赛总数
+for _, c := range list.Contests {
+    c.ID             // 比赛 ID
+    c.Name           // 比赛名称
+    c.StartTime      // 开始时间 (Unix)
+    c.EndTime        // 结束时间 (Unix)
+    c.Rated          // 是否 Rated
+    c.Host.Name      // 主办方
+}
+```
+
+---
+
+### GetDetail
+
+```go
+func (c *ContestService) GetDetail(id int) (*ContestDetail, error)
+```
+
+获取比赛详情。
+
+```go
+detail, _ := client.Contest.GetDetail(341590)
+detail.Name               // 比赛名称
+detail.Description        // 比赛说明（Markdown）
+detail.Joined             // 是否已报名 (0/1)
+detail.TotalParticipants  // 参赛人数
+detail.Difficulty         // 难度
+```
+
+---
+
 ## 类型定义
 
 ### LoginRequest
@@ -515,6 +650,140 @@ type TrainingProblem struct {
     Accepted      bool   `json:"accepted"`
     TotalSubmit   int    `json:"totalSubmit"`
     TotalAccepted int    `json:"totalAccepted"`
+}
+```
+
+---
+
+### UserDetail
+
+```go
+type UserDetail struct {
+    UID        int    `json:"uid"`
+    Name       string `json:"name"`
+    Avatar     string `json:"avatar"`
+    Slogan     string `json:"slogan"`
+    Color      string `json:"color"`
+    CCFLevel   int    `json:"ccfLevel"`
+    XCPCLevel  int    `json:"xcpcLevel"`
+    Background string `json:"background"`
+    IsAdmin    bool   `json:"isAdmin"`
+    IsBanned   bool   `json:"isBanned"`
+}
+```
+
+### UserSummary
+
+```go
+type UserSummary struct {
+    UID     int    `json:"uid"`
+    Name    string `json:"name"`
+    Avatar  string `json:"avatar"`
+    Slogan  string `json:"slogan"`
+    Color   string `json:"color"`
+    IsAdmin bool   `json:"isAdmin"`
+}
+```
+
+### RankingList / RankingItem
+
+```go
+type RankingList struct {
+    Items []RankingItem
+    Count int
+}
+
+type RankingItem struct {
+    Rating int         `json:"rating"`
+    Time   int64       `json:"time"`
+    User   UserSummary `json:"user"`
+}
+```
+
+### DiscussList / DiscussSummary
+
+```go
+type DiscussList struct {
+    Posts        []DiscussSummary
+    Count        int
+    PublicForums []DiscussForum
+}
+
+type DiscussSummary struct {
+    ID     int         `json:"id"`
+    Title  string      `json:"title"`
+    Author UserSummary `json:"author"`
+    Time   int64       `json:"time"`
+}
+```
+
+### DiscussDetail / DiscussPost / DiscussReply
+
+```go
+type DiscussDetail struct {
+    Post    DiscussPost
+    Replies []DiscussReply
+    Count   int
+    Forum   DiscussForum
+}
+
+type DiscussPost struct {
+    ID      int         `json:"id"`
+    Title   string      `json:"title"`
+    Author  UserSummary `json:"author"`
+    Time    int64       `json:"time"`
+    Content string      `json:"content"`
+    Topped  bool        `json:"topped"`
+    Locked  bool        `json:"locked"`
+}
+
+type DiscussReply struct {
+    ID      int         `json:"id"`
+    Author  UserSummary `json:"author"`
+    Time    int64       `json:"time"`
+    Content string      `json:"content"`
+}
+```
+
+### DiscussForum
+
+```go
+type DiscussForum struct {
+    Name  string `json:"name"`
+    Type  int    `json:"type"`
+    Slug  string `json:"slug"`
+    Color string `json:"color"`
+}
+```
+
+### ContestList / ContestSummary
+
+```go
+type ContestList struct {
+    Contests []ContestSummary
+    Count    int
+}
+
+type ContestSummary struct {
+    ID                 int         `json:"id"`
+    Name               string      `json:"name"`
+    StartTime          int64       `json:"startTime"`
+    EndTime            int64       `json:"endTime"`
+    Rated              int         `json:"rated"`
+    Host               ContestHost `json:"host"`
+    ProblemCount       int         `json:"problemCount"`
+}
+```
+
+### ContestDetail
+
+```go
+type ContestDetail struct {
+    ContestSummary
+    Joined            int    `json:"joined"`
+    Description       string `json:"description"`
+    Difficulty        int    `json:"difficulty"`
+    TotalParticipants int    `json:"totalParticipants"`
 }
 ```
 
