@@ -120,7 +120,7 @@ func (p *ProblemService) GetSolutions(pid string, page int) (*SolutionList, erro
 
 // GetSolutionDetail 获取题解详情
 func (p *ProblemService) GetSolutionDetail(sid string) (*Solution, error) {
-	path := fmt.Sprintf("/problem/solution/%s", sid)
+	path := fmt.Sprintf("/article/%s", sid)
 	resp, err := p.client.get(path)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (p *ProblemService) GetSolutionDetail(sid string) (*Solution, error) {
 
 	var result struct {
 		Data struct {
-			Solution Solution `json:"solution"`
+			Solution Solution `json:"article"`
 		} `json:"data"`
 	}
 	if err := parseLentilleContext(resp, &result); err != nil {

@@ -96,11 +96,11 @@ type ProblemSummary struct {
 
 // Solution 题解详情
 type Solution struct {
-	ID      int      `json:"id"`
+	ID      string   `json:"lid"`
 	Author  UserInfo `json:"author"`
 	Title   string   `json:"title"`
 	Content string   `json:"content"`
-	Likes   int      `json:"likes"`
+	Likes   int      `json:"upvote"`
 }
 
 // SolutionList 题解列表
@@ -113,10 +113,10 @@ type SolutionList struct {
 
 // SolutionSummary 题解摘要
 type SolutionSummary struct {
-	ID     int      `json:"id"`
+	ID     string   `json:"lid"`
 	Title  string   `json:"title"`
 	Author UserInfo `json:"author"`
-	Likes  int      `json:"likes"`
+	Likes  int      `json:"upvote"`
 }
 
 // Translation 题目翻译
