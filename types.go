@@ -277,3 +277,150 @@ type TrainingProblem struct {
 	TotalAccepted int      `json:"totalAccepted"`
 	Flag          int      `json:"flag"`
 }
+
+// --- 用户 (User) ---
+
+// UserDetail 用户详情
+type UserDetail struct {
+	UID        int    `json:"uid"`
+	Name       string `json:"name"`
+	Avatar     string `json:"avatar"`
+	Slogan     string `json:"slogan"`
+	Badge      string `json:"badge"`
+	IsAdmin    bool   `json:"isAdmin"`
+	IsBanned   bool   `json:"isBanned"`
+	Color      string `json:"color"`
+	CCFLevel   int    `json:"ccfLevel"`
+	XCPCLevel  int    `json:"xcpcLevel"`
+	Background string `json:"background"`
+}
+
+// --- 排名 (Ranking) ---
+
+// RankingList 排名列表
+type RankingList struct {
+	Items []RankingItem
+	Count int
+}
+
+// RankingItem 排名项
+type RankingItem struct {
+	Rating int         `json:"rating"`
+	Time   int64       `json:"time"`
+	User   UserSummary `json:"user"`
+}
+
+// UserSummary 用户摘要
+type UserSummary struct {
+	UID     int    `json:"uid"`
+	Name    string `json:"name"`
+	Avatar  string `json:"avatar"`
+	Slogan  string `json:"slogan"`
+	Color   string `json:"color"`
+	Badge   string `json:"badge"`
+	IsAdmin bool   `json:"isAdmin"`
+}
+
+// --- 讨论 (Discuss) ---
+
+// DiscussList 讨论列表
+type DiscussList struct {
+	Posts        []DiscussSummary
+	Count        int
+	PublicForums []DiscussForum
+}
+
+// DiscussSummary 讨论摘要
+type DiscussSummary struct {
+	ID     int         `json:"id"`
+	Title  string      `json:"title"`
+	Author UserSummary `json:"author"`
+	Time   int64       `json:"time"`
+}
+
+// DiscussPosts 讨论帖列表（API 包装）
+type DiscussPosts struct {
+	Result []DiscussSummary `json:"result"`
+	Count  int              `json:"count"`
+}
+
+// DiscussForum 讨论板块
+type DiscussForum struct {
+	Name  string `json:"name"`
+	Type  int    `json:"type"`
+	Slug  string `json:"slug"`
+	Color string `json:"color"`
+}
+
+// DiscussDetail 讨论详情
+type DiscussDetail struct {
+	Post    DiscussPost
+	Replies []DiscussReply
+	Count   int
+	Forum   DiscussForum
+}
+
+// DiscussPost 讨论帖
+type DiscussPost struct {
+	ID      int         `json:"id"`
+	Title   string      `json:"title"`
+	Author  UserSummary `json:"author"`
+	Time    int64       `json:"time"`
+	Content string      `json:"content"`
+	Topped  bool        `json:"topped"`
+	Valid   bool        `json:"valid"`
+	Locked  bool        `json:"locked"`
+}
+
+// DiscussReply 讨论回帖
+type DiscussReply struct {
+	ID      int         `json:"id"`
+	Author  UserSummary `json:"author"`
+	Time    int64       `json:"time"`
+	Content string      `json:"content"`
+}
+
+// DiscussReplies 回帖列表（API 包装）
+type DiscussReplies struct {
+	Result []DiscussReply `json:"result"`
+	Count  int            `json:"count"`
+}
+
+// --- 比赛 (Contest) ---
+
+// ContestList 比赛列表
+type ContestList struct {
+	Contests []ContestSummary
+	Count    int
+}
+
+// ContestSummary 比赛摘要
+type ContestSummary struct {
+	ID                 int         `json:"id"`
+	Name               string      `json:"name"`
+	StartTime          int64       `json:"startTime"`
+	EndTime            int64       `json:"endTime"`
+	Method             int         `json:"method"`
+	Visibility         int         `json:"visibility"`
+	InvitationCodeType int         `json:"invitationCodeType"`
+	Rated              int         `json:"rated"`
+	Host               ContestHost `json:"host"`
+	ProblemCount       int         `json:"problemCount"`
+}
+
+// ContestHost 比赛主办方
+type ContestHost struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	IsPremium bool   `json:"isPremium"`
+}
+
+// ContestDetail 比赛详情
+type ContestDetail struct {
+	ContestSummary
+	Joined int `json:"joined"`
+	Description       string `json:"description"`
+	RuleType          int    `json:"ruleType"`
+	Difficulty        int    `json:"difficulty"`
+	TotalParticipants int    `json:"totalParticipants"`
+}
