@@ -266,30 +266,21 @@ func (c *Client) SetCSRF(token string) {
 }
 
 // verifyAuth 校验当前 cookie 是否仍有效
+// 访问需要登录的页面，若被重定向到登录页则说明 cookie 无效
 func (c *Client) verifyAuth(ctx context.Context) error {
-	resp, err := c.get(ctx, "/api/user/current")
+	resp, err := c.get(ctx, "/user/setting")
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+	// 未认证 → 洛谷会 302 重定向到登录页
+	if strings.Contains(resp.Request.URL.Path, "/login") {
 		return &UnauthorizedError{}
-	}
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("verify auth: unexpected status %d", resp.StatusCode)
 	}
 
-	var result struct {
-		Data struct {
-			UID int `json:"uid"`
-		} `json:"data"`
-	}
-	if err := parseBody(resp, &result); err != nil {
-		return err
-	}
-	if result.Data.UID == 0 {
-		return &UnauthorizedError{}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("verify auth: unexpected status %d", resp.StatusCode)
 	}
 	return nil
 }
