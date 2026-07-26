@@ -1,4 +1,4 @@
-package luogusdk
+package luoguclient
 
 // CaptchaSolver 验证码求解器，接收 JPEG 图片字节，返回识别结果
 type CaptchaSolver func(image []byte) (string, error)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	luoguSDK "github.com/laoin114514/luoguSDK"
+	luogu "github.com/laoin114514/luoguClient"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 	password := os.Args[2]
 
 	// 1. 创建客户端（自动加载持久化的 cookie，若有效则跳过登录）
-	client, err := luoguSDK.NewClient()
+	client, err := luogu.NewClient()
 	if err != nil {
 		fmt.Printf("创建客户端失败: %v\n", err)
 		os.Exit(1)
@@ -66,7 +66,7 @@ func main() {
 
 	// 4. 搜索题目示例
 	fmt.Println("\n--- 搜索题目 (关键词: 排序) ---")
-	results, err := client.Problem.Search(luoguSDK.SearchParams{
+	results, err := client.Problem.Search(luogu.SearchParams{
 		Keyword:  "排序",
 		Page:     1,
 		PageSize: 20,

@@ -1,4 +1,4 @@
-module github.com/laoin114514/luoguSDK
+module github.com/laoin114514/luoguClient
 
 go 1.26.2
 

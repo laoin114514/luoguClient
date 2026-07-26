@@ -1,4 +1,4 @@
-package luogusdk
+package luoguclient
 
 // RecordStatus 提交状态
 type RecordStatus int

@@ -1,4 +1,4 @@
-package luogusdk
+package luoguclient
 
 import (
 	"fmt"

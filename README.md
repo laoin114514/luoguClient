@@ -5,7 +5,7 @@
 ## 安装
 
 ```bash
-go get github.com/laoin114514/luoguSDK
+go get github.com/laoin114514/luoguClient
 ```
 
 ## 快速开始
@@ -15,7 +15,7 @@ package main
 
 import (
     "fmt"
-    luogu "github.com/laoin114514/luoguSDK"
+    luogu "github.com/laoin114514/luoguClient"
 )
 
 func main() {
@@ -89,7 +89,7 @@ luogu.LangCPP14 // 28
 ## 项目结构
 
 ```
-luoguSDK/
+luoguClient/
 ├── client.go        # Client 核心、HTTP 请求、配置项
 ├── auth.go          # AuthService 认证
 ├── problem.go       # ProblemService 题目
