@@ -84,9 +84,8 @@ func (p *ProblemService) Search(params SearchParams) (*SearchResult, error) {
 // GetSolutions 获取题解列表
 func (p *ProblemService) GetSolutions(pid string, page int) (*SolutionList, error) {
 	q := url.Values{}
-	q.Set("pid", pid)
 	q.Set("page", strconv.Itoa(page))
-	path := "/problem/solution?" + q.Encode()
+	path := fmt.Sprintf("/problem/solution/%s?%s", pid, q.Encode())
 	resp, err := p.client.get(path)
 	if err != nil {
 		return nil, err
