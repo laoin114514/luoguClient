@@ -228,3 +228,52 @@ type TestCaseResult struct {
 	Description string       `json:"description"`
 	SubtaskID   int          `json:"subtaskID"`
 }
+
+// --- 题单 (Training) ---
+
+// TrainingListParams 题单搜索参数
+type TrainingListParams struct {
+	Keyword string // 关键词搜索
+	Type    int    // 题单类型（0 表示全部）
+	Page    int    // 页码
+}
+
+// TrainingList 题单列表
+type TrainingList struct {
+	Trainings []TrainingSummary
+	Count     int
+}
+
+// TrainingSummary 题单摘要
+type TrainingSummary struct {
+	ID           int      `json:"id"`
+	Name         string   `json:"name"`
+	Type         int      `json:"type"`
+	Provider     UserInfo `json:"provider"`
+	CreateTime   int64    `json:"createTime"`
+	Deadline     *int64   `json:"deadline"`
+	ProblemCount int      `json:"problemCount"`
+	MarkCount    int      `json:"markCount"`
+}
+
+// TrainingDetail 题单详情
+type TrainingDetail struct {
+	TrainingSummary
+	Description string            `json:"description"`
+	Marked      bool              `json:"marked"`
+	Problems    []TrainingProblem `json:"problems"`
+}
+
+// TrainingProblem 题单中的题目
+type TrainingProblem struct {
+	PID           string   `json:"pid"`
+	Type          string   `json:"type"`
+	Name          string   `json:"name"`
+	Difficulty    int      `json:"difficulty"`
+	Submitted     bool     `json:"submitted"`
+	Accepted      bool     `json:"accepted"`
+	Tags          []int    `json:"tags"`
+	TotalSubmit   int      `json:"totalSubmit"`
+	TotalAccepted int      `json:"totalAccepted"`
+	Flag          int      `json:"flag"`
+}
