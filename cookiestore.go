@@ -38,13 +38,9 @@ func (j *ExportableCookieJar) setSavePath(path string) {
 	j.savePath = path
 }
 
-// SetCookies 设置 cookie，若 savePath 非空则自动持久化到文件
+// SetCookies 设置 cookie 到内存（不自动写磁盘，调用方在合适时机显式 SaveCookies）
 func (j *ExportableCookieJar) SetCookies(u *url.URL, cookies []*http.Cookie) {
 	j.jar.SetCookies(u, cookies)
-	if j.savePath != "" {
-		// 忽略写文件错误 — http.CookieJar 接口不支持返回 error
-		_ = saveCookies(j, j.savePath)
-	}
 }
 
 func (j *ExportableCookieJar) Cookies(u *url.URL) []*http.Cookie {

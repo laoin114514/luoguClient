@@ -57,6 +57,11 @@ func (a *AuthService) Login(username, password, captcha string) (*LoginResponse,
 		return nil, err
 	}
 
+	// 登录成功后持久化 cookie
+	if err := a.client.saveCookiesToFile(); err != nil {
+		return nil, fmt.Errorf("save cookies: %w", err)
+	}
+
 	return &result, nil
 }
 
