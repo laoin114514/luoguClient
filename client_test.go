@@ -16,10 +16,11 @@ func TestClientNewRequestHeaders(t *testing.T) {
 		maxRetries: 3,
 		backoffFn:  defaultBackoff,
 		userAgent:  "test-ua",
+		ctx:        context.Background(),
 		httpClient: &http.Client{Jar: jar},
 	}
 
-	req, err := c.newRequest(context.Background(), "POST", "/test", map[string]string{"key": "value"})
+	req, err := c.newRequest("POST", "/test", map[string]string{"key": "value"})
 	if err != nil {
 		t.Fatalf("newRequest: %v", err)
 	}
@@ -46,10 +47,11 @@ func TestClientNewRequestNoCSRFForGET(t *testing.T) {
 		maxRetries: 3,
 		backoffFn:  defaultBackoff,
 		userAgent:  "test-ua",
+		ctx:        context.Background(),
 		httpClient: &http.Client{Jar: jar},
 	}
 
-	req, err := c.newRequest(context.Background(), "GET", "/test", nil)
+	req, err := c.newRequest("GET", "/test", nil)
 	if err != nil {
 		t.Fatalf("newRequest: %v", err)
 	}
@@ -73,6 +75,7 @@ func TestClientNoRetryOn4xx(t *testing.T) {
 		maxRetries: 3,
 		backoffFn:  func(int) time.Duration { return 0 },
 		userAgent:  "test-ua",
+		ctx:        context.Background(),
 		httpClient: &http.Client{Jar: jar},
 	}
 
@@ -99,6 +102,7 @@ func TestClientRetryOn5xx(t *testing.T) {
 		maxRetries: 2,
 		backoffFn:  func(int) time.Duration { return 0 },
 		userAgent:  "test-ua",
+		ctx:        context.Background(),
 		httpClient: &http.Client{Jar: jar},
 	}
 

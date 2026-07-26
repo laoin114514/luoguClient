@@ -27,6 +27,7 @@ type Client struct {
 	maxRetries int
 	backoffFn  func(int) time.Duration
 	userAgent  string
+	ctx        context.Context
 
 	Auth    *AuthService
 	Problem *ProblemService
@@ -66,6 +67,13 @@ func WithUserAgent(ua string) ClientOption {
 	}
 }
 
+// WithContext 设置请求的默认 context（用于超时控制/取消）
+func WithContext(ctx context.Context) ClientOption {
+	return func(c *Client) {
+		c.ctx = ctx
+	}
+}
+
 // NewClient 创建新的洛谷客户端
 func NewClient(opts ...ClientOption) (*Client, error) {
 	cookiePath, err := defaultCookiePath()
@@ -84,6 +92,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		maxRetries: 3,
 		backoffFn:  defaultBackoff,
 		userAgent:  defaultUA,
+		ctx:        context.Background(),
 		httpClient: &http.Client{
 			Jar:     jar,
 			Timeout: 30 * time.Second,
@@ -109,7 +118,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 }
 
 // newRequest 创建带默认请求头的 HTTP 请求
-func (c *Client) newRequest(ctx context.Context, method, path string, body interface{}) (*http.Request, error) {
+func (c *Client) newRequest(method, path string, body interface{}) (*http.Request, error) {
 	urlStr := luoguBaseURL + strings.TrimPrefix(path, "/")
 
 	var bodyReader io.Reader
@@ -121,7 +130,7 @@ func (c *Client) newRequest(ctx context.Context, method, path string, body inter
 		bodyReader = bytes.NewReader(data)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, urlStr, bodyReader)
+	req, err := http.NewRequestWithContext(c.ctx, method, urlStr, bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
@@ -175,8 +184,8 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 }
 
 // get 发送 GET 请求
-func (c *Client) get(ctx context.Context, path string) (*http.Response, error) {
-	req, err := c.newRequest(ctx, "GET", path, nil)
+func (c *Client) get(path string) (*http.Response, error) {
+	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +193,8 @@ func (c *Client) get(ctx context.Context, path string) (*http.Response, error) {
 }
 
 // post 发送 POST 请求
-func (c *Client) post(ctx context.Context, path string, body interface{}) (*http.Response, error) {
-	req, err := c.newRequest(ctx, "POST", path, body)
+func (c *Client) post(path string, body interface{}) (*http.Response, error) {
+	req, err := c.newRequest("POST", path, body)
 	if err != nil {
 		return nil, err
 	}
@@ -228,9 +237,9 @@ func parseLentilleContext(resp *http.Response, v interface{}) error {
 }
 
 // getSimple 发送 GET 请求，使用非浏览器 UA 以获取服务端渲染的 HTML
-func (c *Client) getSimple(ctx context.Context, path string) (*http.Response, error) {
+func (c *Client) getSimple(path string) (*http.Response, error) {
 	urlStr := luoguBaseURL + strings.TrimPrefix(path, "/")
-	req, err := http.NewRequestWithContext(ctx, "GET", urlStr, nil)
+	req, err := http.NewRequestWithContext(c.ctx, "GET", urlStr, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -239,8 +248,8 @@ func (c *Client) getSimple(ctx context.Context, path string) (*http.Response, er
 }
 
 // refreshCSRF 从首页获取 CSRF token
-func (c *Client) refreshCSRF(ctx context.Context) error {
-	resp, err := c.getSimple(ctx, "/")
+func (c *Client) refreshCSRF() error {
+	resp, err := c.getSimple("/")
 	if err != nil {
 		return &CSRFError{Err: err}
 	}
@@ -267,8 +276,8 @@ func (c *Client) SetCSRF(token string) {
 
 // verifyAuth 校验当前 cookie 是否仍有效
 // 访问需要登录的页面，若被重定向到登录页则说明 cookie 无效
-func (c *Client) verifyAuth(ctx context.Context) error {
-	resp, err := c.get(ctx, "/user/setting")
+func (c *Client) verifyAuth() error {
+	resp, err := c.get("/user/setting")
 	if err != nil {
 		return err
 	}

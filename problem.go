@@ -1,7 +1,6 @@
 package luogusdk
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -14,9 +13,9 @@ type ProblemService struct {
 }
 
 // Get 获取题目详情
-func (p *ProblemService) Get(ctx context.Context, pid string) (*Problem, error) {
+func (p *ProblemService) Get(pid string) (*Problem, error) {
 	path := fmt.Sprintf("/problem/%s", pid)
-	resp, err := p.client.get(ctx, path)
+	resp, err := p.client.get(path)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +37,7 @@ func (p *ProblemService) Get(ctx context.Context, pid string) (*Problem, error) 
 }
 
 // Search 搜索题目
-func (p *ProblemService) Search(ctx context.Context, params SearchParams) (*SearchResult, error) {
+func (p *ProblemService) Search(params SearchParams) (*SearchResult, error) {
 	q := url.Values{}
 	q.Set("keyword", params.Keyword)
 	page := params.Page
@@ -50,7 +49,7 @@ func (p *ProblemService) Search(ctx context.Context, params SearchParams) (*Sear
 		q.Set("perPage", strconv.Itoa(params.PageSize))
 	}
 	path := "/problem/list?" + q.Encode()
-	resp, err := p.client.get(ctx, path)
+	resp, err := p.client.get(path)
 	if err != nil {
 		return nil, err
 	}
@@ -83,12 +82,12 @@ func (p *ProblemService) Search(ctx context.Context, params SearchParams) (*Sear
 }
 
 // GetSolutions 获取题解列表
-func (p *ProblemService) GetSolutions(ctx context.Context, pid string, page int) (*SolutionList, error) {
+func (p *ProblemService) GetSolutions(pid string, page int) (*SolutionList, error) {
 	q := url.Values{}
 	q.Set("pid", pid)
 	q.Set("page", strconv.Itoa(page))
 	path := "/problem/solution?" + q.Encode()
-	resp, err := p.client.get(ctx, path)
+	resp, err := p.client.get(path)
 	if err != nil {
 		return nil, err
 	}
@@ -121,9 +120,9 @@ func (p *ProblemService) GetSolutions(ctx context.Context, pid string, page int)
 }
 
 // GetSolutionDetail 获取题解详情
-func (p *ProblemService) GetSolutionDetail(ctx context.Context, sid string) (*Solution, error) {
+func (p *ProblemService) GetSolutionDetail(sid string) (*Solution, error) {
 	path := fmt.Sprintf("/problem/solution/%s", sid)
-	resp, err := p.client.get(ctx, path)
+	resp, err := p.client.get(path)
 	if err != nil {
 		return nil, err
 	}
@@ -148,9 +147,9 @@ func (p *ProblemService) GetSolutionDetail(ctx context.Context, sid string) (*So
 //
 // 注意：此方法会单独请求一次题目页面。如需同时获取题目详情和翻译，
 // 请使用 GetFull() 以减少请求次数。
-func (p *ProblemService) GetTranslation(ctx context.Context, pid string) ([]Translation, error) {
+func (p *ProblemService) GetTranslation(pid string) ([]Translation, error) {
 	path := fmt.Sprintf("/problem/%s", pid)
-	resp, err := p.client.get(ctx, path)
+	resp, err := p.client.get(path)
 	if err != nil {
 		return nil, err
 	}
@@ -180,9 +179,9 @@ func (p *ProblemService) GetTranslation(ctx context.Context, pid string) ([]Tran
 // GetFull 获取完整的题目信息（题目详情 + 所有翻译），只需一次 HTTP 请求
 //
 // 相比分别调用 Get() + GetTranslation()（两次请求同一页面），此方法更高效。
-func (p *ProblemService) GetFull(ctx context.Context, pid string) (*Problem, []Translation, error) {
+func (p *ProblemService) GetFull(pid string) (*Problem, []Translation, error) {
 	path := fmt.Sprintf("/problem/%s", pid)
-	resp, err := p.client.get(ctx, path)
+	resp, err := p.client.get(path)
 	if err != nil {
 		return nil, nil, err
 	}
