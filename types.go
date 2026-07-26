@@ -141,10 +141,10 @@ type UserInfo struct {
 
 // RecordListParams 记录搜索参数
 type RecordListParams struct {
-	User    int    // 用户 UID（0 表示不限制）
-	Problem string // 题目 PID（空表示不限制）
-	Status  int    // 状态过滤（0 表示全部，12=AC 等）
-	Page    int    // 页码
+	User    int          // 用户 UID（0 表示不限制）
+	Problem string       // 题目 PID（空表示不限制）
+	Status  RecordStatus // 状态过滤（0 表示全部，可用 StatusAccepted 等常量）
+	Page    int          // 页码
 }
 
 // RecordList 记录列表
@@ -155,17 +155,17 @@ type RecordList struct {
 
 // RecordSummary 记录摘要
 type RecordSummary struct {
-	ID               int         `json:"id"`
-	Status           int         `json:"status"`
-	Score            int         `json:"score"`
-	Time             int         `json:"time"`
-	Memory           int         `json:"memory"`
-	SourceCodeLength int         `json:"sourceCodeLength"`
-	SubmitTime       int64       `json:"submitTime"`
-	Language         int         `json:"language"`
-	EnableO2         bool        `json:"enableO2"`
-	Problem          ProblemRef  `json:"problem"`
-	User             UserInfo    `json:"user"`
+	ID               int          `json:"id"`
+	Status           RecordStatus `json:"status"`
+	Score            int          `json:"score"`
+	Time             int          `json:"time"`
+	Memory           int          `json:"memory"`
+	SourceCodeLength int          `json:"sourceCodeLength"`
+	SubmitTime       int64        `json:"submitTime"`
+	Language         Language     `json:"language"`
+	EnableO2         bool         `json:"enableO2"`
+	Problem          ProblemRef   `json:"problem"`
+	User             UserInfo     `json:"user"`
 }
 
 // ProblemRef 记录中的题目引用
@@ -200,7 +200,7 @@ type CompileResult struct {
 type JudgeResult struct {
 	Subtasks          []SubtaskResult `json:"subtasks"`
 	FinishedCaseCount int             `json:"finishedCaseCount"`
-	Status            int             `json:"status"`
+	Status            RecordStatus    `json:"status"`
 	Time              int             `json:"time"`
 	Memory            int             `json:"memory"`
 	Score             int             `json:"score"`
@@ -210,7 +210,7 @@ type JudgeResult struct {
 type SubtaskResult struct {
 	ID        int                       `json:"id"`
 	Score     int                       `json:"score"`
-	Status    int                       `json:"status"`
+	Status    RecordStatus              `json:"status"`
 	Time      int                       `json:"time"`
 	Memory    int                       `json:"memory"`
 	TestCases map[string]TestCaseResult `json:"testCases"`
@@ -218,13 +218,13 @@ type SubtaskResult struct {
 
 // TestCaseResult 单个测试点结果
 type TestCaseResult struct {
-	ID          int    `json:"id"`
-	Status      int    `json:"status"`
-	Time        int    `json:"time"`
-	Memory      int    `json:"memory"`
-	Score       int    `json:"score"`
-	Signal      int    `json:"signal"`
-	ExitCode    int    `json:"exitCode"`
-	Description string `json:"description"`
-	SubtaskID   int    `json:"subtaskID"`
+	ID          int          `json:"id"`
+	Status      RecordStatus `json:"status"`
+	Time        int          `json:"time"`
+	Memory      int          `json:"memory"`
+	Score       int          `json:"score"`
+	Signal      int          `json:"signal"`
+	ExitCode    int          `json:"exitCode"`
+	Description string       `json:"description"`
+	SubtaskID   int          `json:"subtaskID"`
 }

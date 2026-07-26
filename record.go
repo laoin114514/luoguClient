@@ -26,7 +26,7 @@ func (r *RecordService) GetList(params RecordListParams) (*RecordList, error) {
 		q.Set("pid", params.Problem)
 	}
 	if params.Status > 0 {
-		q.Set("status", strconv.Itoa(params.Status))
+		q.Set("status", strconv.Itoa(int(params.Status)))
 	}
 	page := params.Page
 	if page <= 0 {
