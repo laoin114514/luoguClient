@@ -7,29 +7,16 @@ type RecordStatus int
 type Language int
 
 // --- 提交状态常量 ---
-
+// 通过实际抓包确认的：
 const (
-	StatusWaiting             RecordStatus = 0  // 等待评测
-	StatusRunningJudging      RecordStatus = 1  // 评测中
-	StatusCompiling           RecordStatus = 2  // 编译中
-	StatusOutputLimitExceeded RecordStatus = 3  // 输出超限
-	StatusMemoryLimitExceeded RecordStatus = 4  // 内存超限
-	StatusTimeLimitExceeded   RecordStatus = 5  // 时间超限
-	StatusWrongAnswer         RecordStatus = 6  // 答案错误
-	StatusRuntimeError        RecordStatus = 7  // 运行错误
-	StatusCompileError        RecordStatus = 8  // 编译错误
-	StatusAccepted            RecordStatus = 12 // 通过
-	StatusUnaccepted          RecordStatus = 14 // 未通过（部分分/有测试点未通过）
+	StatusCompiling  RecordStatus = 2  // 编译中（实测：score=null 的记录）
+	StatusAccepted   RecordStatus = 12 // 通过（实测：score=100 的记录全是 12）
+	StatusUnaccepted RecordStatus = 14 // 未通过/部分分（实测：score<100 的记录全是 14）
 )
 
 // --- 语言常量 ---
-
+// 通过实际抓包确认的：
 const (
-	LangC      Language = 1  // C
-	LangCPP    Language = 2  // C++98
-	LangPascal Language = 3  // Pascal
-	LangJava   Language = 4  // Java
-	LangPython Language = 7  // Python 3
-	LangGo     Language = 14 // Go
-	LangCPP14  Language = 28 // C++14
+	LangGo    Language = 14 // Go（实测：含 Go 源码的记录 language=14）
+	LangCPP14 Language = 28 // C++14（实测：部分记录 language=28）
 )
