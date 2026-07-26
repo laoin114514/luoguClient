@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -266,15 +265,33 @@ func (c *Client) SetCSRF(token string) {
 	c.csrfToken = token
 }
 
-// verifyAuth 校验当前 cookie 是否仍有效（检查 _uid cookie 是否存在且非零）
+// verifyAuth 校验当前 cookie 是否仍有效
 func (c *Client) verifyAuth(ctx context.Context) error {
-	u, _ := url.Parse(luoguBaseURL)
-	for _, ck := range c.cookieJar.Cookies(u) {
-		if ck.Name == "_uid" && ck.Value != "" && ck.Value != "0" {
-			return nil
-		}
+	resp, err := c.get(ctx, "/api/user/current")
+	if err != nil {
+		return err
 	}
-	return &UnauthorizedError{}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return &UnauthorizedError{}
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("verify auth: unexpected status %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Data struct {
+			UID int `json:"uid"`
+		} `json:"data"`
+	}
+	if err := parseBody(resp, &result); err != nil {
+		return err
+	}
+	if result.Data.UID == 0 {
+		return &UnauthorizedError{}
+	}
+	return nil
 }
 
 // saveCookiesToFile 持久化当前 cookie
