@@ -136,3 +136,95 @@ type UserInfo struct {
 	Name   string `json:"name"`
 	Avatar string `json:"avatar"`
 }
+
+// --- 记录 (Record) ---
+
+// RecordListParams 记录搜索参数
+type RecordListParams struct {
+	User    int    // 用户 UID（0 表示不限制）
+	Problem string // 题目 PID（空表示不限制）
+	Status  int    // 状态过滤（0 表示全部，12=AC 等）
+	Page    int    // 页码
+}
+
+// RecordList 记录列表
+type RecordList struct {
+	Records []RecordSummary
+	Count   int
+}
+
+// RecordSummary 记录摘要
+type RecordSummary struct {
+	ID               int         `json:"id"`
+	Status           int         `json:"status"`
+	Score            int         `json:"score"`
+	Time             int         `json:"time"`
+	Memory           int         `json:"memory"`
+	SourceCodeLength int         `json:"sourceCodeLength"`
+	SubmitTime       int64       `json:"submitTime"`
+	Language         int         `json:"language"`
+	EnableO2         bool        `json:"enableO2"`
+	Problem          ProblemRef  `json:"problem"`
+	User             UserInfo    `json:"user"`
+}
+
+// ProblemRef 记录中的题目引用
+type ProblemRef struct {
+	PID        string `json:"pid"`
+	Title      string `json:"title"`
+	Difficulty int    `json:"difficulty"`
+	FullScore  int    `json:"fullScore"`
+	Type       string `json:"type"`
+}
+
+// RecordDetail 记录详情（含源代码和评测详情）
+type RecordDetail struct {
+	RecordSummary
+	SourceCode string      `json:"sourceCode"`
+	Detail     JudgeDetail `json:"detail"`
+}
+
+// JudgeDetail 评测详情
+type JudgeDetail struct {
+	CompileResult CompileResult `json:"compileResult"`
+	JudgeResult   JudgeResult   `json:"judgeResult"`
+}
+
+// CompileResult 编译结果
+type CompileResult struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
+// JudgeResult 评测结果
+type JudgeResult struct {
+	Subtasks          []SubtaskResult `json:"subtasks"`
+	FinishedCaseCount int             `json:"finishedCaseCount"`
+	Status            int             `json:"status"`
+	Time              int             `json:"time"`
+	Memory            int             `json:"memory"`
+	Score             int             `json:"score"`
+}
+
+// SubtaskResult 子任务结果
+type SubtaskResult struct {
+	ID        int                       `json:"id"`
+	Score     int                       `json:"score"`
+	Status    int                       `json:"status"`
+	Time      int                       `json:"time"`
+	Memory    int                       `json:"memory"`
+	TestCases map[string]TestCaseResult `json:"testCases"`
+}
+
+// TestCaseResult 单个测试点结果
+type TestCaseResult struct {
+	ID          int    `json:"id"`
+	Status      int    `json:"status"`
+	Time        int    `json:"time"`
+	Memory      int    `json:"memory"`
+	Score       int    `json:"score"`
+	Signal      int    `json:"signal"`
+	ExitCode    int    `json:"exitCode"`
+	Description string `json:"description"`
+	SubtaskID   int    `json:"subtaskID"`
+}

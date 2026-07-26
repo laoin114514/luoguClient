@@ -31,6 +31,7 @@ type Client struct {
 
 	Auth    *AuthService
 	Problem *ProblemService
+	Record  *RecordService
 }
 
 // ClientOption 客户端配置函数
@@ -108,6 +109,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 
 	c.Auth = &AuthService{client: c}
 	c.Problem = &ProblemService{client: c}
+	c.Record = &RecordService{client: c}
 
 	// 尝试加载持久化的 cookie（文件不存在不算错误）
 	if err := loadCookies(c.cookieJar, c.cookieFile); err != nil && !os.IsNotExist(err) {
