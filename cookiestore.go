@@ -79,8 +79,11 @@ func (j *ExportableCookieJar) Export() ([]byte, error) {
 	return json.Marshal(exported)
 }
 
-// Import 从 JSON 字节导入 cookie
+// Import 从 JSON 字节导入 cookie（空输入视为无 cookie 可导入，不改变现有会话）
 func (j *ExportableCookieJar) Import(data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
 	var cookies []exportableCookie
 	if err := json.Unmarshal(data, &cookies); err != nil {
 		return err

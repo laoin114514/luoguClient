@@ -61,6 +61,9 @@ if data, err := os.ReadFile("cookies.json"); err == nil {
     client.ImportCookies(data)
 }
 
+// 或者创建时直接注入
+client, _ := luogu.NewClient(luogu.WithCookies(data))
+
 // 登录成功后导出，由调用方自行保存
 data, _ := client.ExportCookies()
 os.WriteFile("cookies.json", data, 0600)

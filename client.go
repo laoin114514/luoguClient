@@ -25,6 +25,7 @@ type Client struct {
 	backoffFn  func(int) time.Duration
 	userAgent  string
 	ctx        context.Context
+	optionErr  error // Option 执行期间的错误，由 NewClient 返回
 
 	Auth     *AuthService
 	Problem  *ProblemService
@@ -69,6 +70,22 @@ func WithContext(ctx context.Context) ClientOption {
 	}
 }
 
+// WithCookies 创建客户端时注入 cookie（JSON 格式，与 ExportCookies 的输出一致）。
+// 空数据视为不注入，便于直接传入 os.ReadFile 的结果；JSON 非法时 NewClient 返回错误。
+//
+//	data, _ := client.ExportCookies()
+//	client, _ := luogu.NewClient(luogu.WithCookies(data))
+func WithCookies(data []byte) ClientOption {
+	return func(c *Client) {
+		if c.optionErr != nil {
+			return
+		}
+		if err := c.cookieJar.Import(data); err != nil {
+			c.optionErr = fmt.Errorf("import cookies: %w", err)
+		}
+	}
+}
+
 // NewClient 创建新的洛谷客户端
 //
 // cookie 仅保存在内存中，客户端不会读写任何文件；如需跨进程复用登录态，
@@ -93,6 +110,9 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 
 	for _, opt := range opts {
 		opt(c)
+	}
+	if c.optionErr != nil {
+		return nil, c.optionErr
 	}
 
 	c.Auth = &AuthService{client: c}

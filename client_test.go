@@ -145,3 +145,39 @@ func TestClientCookieExportImportClear(t *testing.T) {
 		t.Errorf("cookies not cleared, got %s", data)
 	}
 }
+
+func TestWithCookiesOption(t *testing.T) {
+	c, err := NewClient(WithCookies([]byte(`[{"name":"_uid","value":"7","domain":".luogu.com.cn","path":"/"}]`)))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+
+	data, err := c.ExportCookies()
+	if err != nil {
+		t.Fatalf("ExportCookies: %v", err)
+	}
+	if !strings.Contains(string(data), `"7"`) {
+		t.Errorf("cookies injected at construction not present: %s", data)
+	}
+}
+
+func TestWithCookiesOptionInvalidJSON(t *testing.T) {
+	if _, err := NewClient(WithCookies([]byte("not json"))); err == nil {
+		t.Error("NewClient should return error for invalid cookie JSON")
+	}
+}
+
+func TestWithCookiesOptionEmpty(t *testing.T) {
+	// 常见用法：os.ReadFile 失败时 data 为 nil，此时应视为无 cookie 而非报错
+	c, err := NewClient(WithCookies(nil))
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+	data, err := c.ExportCookies()
+	if err != nil {
+		t.Fatalf("ExportCookies: %v", err)
+	}
+	if string(data) != "[]" {
+		t.Errorf("expected no cookies, got %s", data)
+	}
+}

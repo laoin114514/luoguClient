@@ -29,6 +29,7 @@ client, err := luogu.NewClient(opts ...ClientOption)
 | `WithTimeout(d)` | HTTP 超时，默认 30s |
 | `WithRetry(n, backoff)` | 重试次数和退避函数，默认 3 次指数退避 |
 | `WithUserAgent(ua)` | 自定义 User-Agent |
+| `WithCookies(data)` | 创建时注入 cookie（JSON，格式同 `ExportCookies`；空数据不注入） |
 
 ---
 
@@ -51,6 +52,9 @@ os.WriteFile("cookies.json", data, 0600)
 if data, err := os.ReadFile("cookies.json"); err == nil {
     client.ImportCookies(data)
 }
+
+// 或在创建客户端时直接注入（cookie JSON 非法时 NewClient 返回错误）
+client, err := luogu.NewClient(luogu.WithCookies(data))
 ```
 
 ---
