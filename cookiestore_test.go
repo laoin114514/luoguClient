@@ -3,12 +3,13 @@ package luoguclient
 import (
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"testing"
 )
 
 func TestExportableCookieJarRoundTrip(t *testing.T) {
-	jar, err := newExportableCookieJar("")
+	jar, err := newExportableCookieJar()
 	if err != nil {
 		t.Fatalf("create jar: %v", err)
 	}
@@ -24,7 +25,7 @@ func TestExportableCookieJarRoundTrip(t *testing.T) {
 		t.Fatalf("export: %v", err)
 	}
 
-	jar2, _ := newExportableCookieJar("")
+	jar2, _ := newExportableCookieJar()
 	if err := jar2.Import(data); err != nil {
 		t.Fatalf("import: %v", err)
 	}
@@ -51,23 +52,32 @@ func TestExportableCookieJarRoundTrip(t *testing.T) {
 	}
 }
 
-func TestSaveLoadCookiesToFile(t *testing.T) {
-	jar, _ := newExportableCookieJar("")
+func TestCallerSidePersistenceRoundTrip(t *testing.T) {
+	jar, _ := newExportableCookieJar()
 	u, _ := url.Parse(luoguBaseURL)
 	jar.SetCookies(u, []*http.Cookie{
 		{Name: "_uid", Value: "99999", Domain: ".luogu.com.cn", Path: "/"},
 	})
 
+	// 调用方自行落盘
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "cookies.json")
-
-	if err := saveCookies(jar, filePath); err != nil {
-		t.Fatalf("save: %v", err)
+	data, err := jar.Export()
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	if err := os.WriteFile(filePath, data, 0600); err != nil {
+		t.Fatalf("write: %v", err)
 	}
 
-	jar2, _ := newExportableCookieJar("")
-	if err := loadCookies(jar2, filePath); err != nil {
-		t.Fatalf("load: %v", err)
+	// 新会话从调用方保存的内容恢复
+	raw, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	jar2, _ := newExportableCookieJar()
+	if err := jar2.Import(raw); err != nil {
+		t.Fatalf("import: %v", err)
 	}
 
 	cookies := jar2.Cookies(u)
@@ -77,7 +87,7 @@ func TestSaveLoadCookiesToFile(t *testing.T) {
 }
 
 func TestExportImportHostOnlyCookie(t *testing.T) {
-	jar, _ := newExportableCookieJar("")
+	jar, _ := newExportableCookieJar()
 	u, _ := url.Parse(luoguBaseURL)
 	// 模拟服务端无 domain/path 属性的 Set-Cookie（host-only cookie）
 	jar.SetCookies(u, []*http.Cookie{
@@ -90,7 +100,7 @@ func TestExportImportHostOnlyCookie(t *testing.T) {
 		t.Fatalf("export: %v", err)
 	}
 
-	jar2, _ := newExportableCookieJar("")
+	jar2, _ := newExportableCookieJar()
 	if err := jar2.Import(data); err != nil {
 		t.Fatalf("import: %v", err)
 	}

@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"os"
-	"path/filepath"
 )
 
 // exportableCookie 可序列化的 cookie 结构
@@ -19,26 +17,21 @@ type exportableCookie struct {
 	HttpOnly bool   `json:"http_only,omitempty"`
 }
 
-// ExportableCookieJar 包装 cookiejar.Jar，支持持久化
+// ExportableCookieJar 包装 cookiejar.Jar，支持将 cookie 导出为 JSON 或从 JSON 导入。
+// cookie 仅保存在内存中，持久化（写文件、数据库等）由调用方自行负责。
 type ExportableCookieJar struct {
-	jar      *cookiejar.Jar
-	savePath string // 非空时 SetCookies 自动写回文件
+	jar *cookiejar.Jar
 }
 
-func newExportableCookieJar(savePath string) (*ExportableCookieJar, error) {
+func newExportableCookieJar() (*ExportableCookieJar, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return nil, err
 	}
-	return &ExportableCookieJar{jar: jar, savePath: savePath}, nil
+	return &ExportableCookieJar{jar: jar}, nil
 }
 
-// setSavePath 更新持久化路径（空则禁用自动保存）
-func (j *ExportableCookieJar) setSavePath(path string) {
-	j.savePath = path
-}
-
-// SetCookies 设置 cookie 到内存（不自动写磁盘，调用方在合适时机显式 SaveCookies）
+// SetCookies 设置 cookie 到内存（不落盘，调用方可通过 Client.ExportCookies 导出）
 func (j *ExportableCookieJar) SetCookies(u *url.URL, cookies []*http.Cookie) {
 	j.jar.SetCookies(u, cookies)
 }
@@ -47,16 +40,13 @@ func (j *ExportableCookieJar) Cookies(u *url.URL) []*http.Cookie {
 	return j.jar.Cookies(u)
 }
 
-// Clear 清空内存中的 cookie 并删除持久化文件
+// Clear 清空内存中的 cookie
 func (j *ExportableCookieJar) Clear() error {
 	newJar, err := cookiejar.New(nil)
 	if err != nil {
 		return err
 	}
 	j.jar = newJar
-	if j.savePath != "" {
-		_ = os.Remove(j.savePath)
-	}
 	return nil
 }
 
@@ -118,34 +108,4 @@ func (j *ExportableCookieJar) Import(data []byte) error {
 		}})
 	}
 	return nil
-}
-
-// defaultCookiePath 返回默认 cookie 文件路径
-func defaultCookiePath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(home, ".luogu", "cookies.json"), nil
-}
-
-// saveCookies 保存 cookie 到文件
-func saveCookies(jar *ExportableCookieJar, filePath string) error {
-	data, err := jar.Export()
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(filePath), 0700); err != nil {
-		return err
-	}
-	return os.WriteFile(filePath, data, 0600)
-}
-
-// loadCookies 从文件加载 cookie
-func loadCookies(jar *ExportableCookieJar, filePath string) error {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-	return jar.Import(data)
 }

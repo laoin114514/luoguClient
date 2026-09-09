@@ -3,6 +3,7 @@
 ## 目录
 
 - [Client 配置](#client-配置)
+- [Cookie 管理](#cookie-管理)
 - [AuthService 认证](#authservice-认证)
 - [ProblemService 题目](#problemservice-题目)
 - [RecordService 记录](#recordservice-记录)
@@ -24,11 +25,33 @@ client, err := luogu.NewClient(opts ...ClientOption)
 
 | Option | 说明 |
 |--------|------|
-| `WithCookieFile(path)` | Cookie 持久化文件路径，默认 `~/.luogu/cookies.json` |
 | `WithContext(ctx)` | 设置请求 context（超时/取消），默认 `context.Background()` |
 | `WithTimeout(d)` | HTTP 超时，默认 30s |
 | `WithRetry(n, backoff)` | 重试次数和退避函数，默认 3 次指数退避 |
 | `WithUserAgent(ua)` | 自定义 User-Agent |
+
+---
+
+## Cookie 管理
+
+Cookie 仅保存在内存中，SDK 不读写任何文件；是否持久化、存到哪里由调用方自行决定。
+
+```go
+func (c *Client) ExportCookies() ([]byte, error)   // 导出为 JSON
+func (c *Client) ImportCookies(data []byte) error  // 从 JSON 恢复
+func (c *Client) ClearCookies() error              // 清空内存中的 cookie
+```
+
+```go
+// 登录成功后自行保存
+data, _ := client.ExportCookies()
+os.WriteFile("cookies.json", data, 0600)
+
+// 下次启动时恢复
+if data, err := os.ReadFile("cookies.json"); err == nil {
+    client.ImportCookies(data)
+}
+```
 
 ---
 
@@ -60,7 +83,7 @@ func (a *AuthService) GetCaptcha() ([]byte, error)
 func (a *AuthService) Login(username, password, captcha string) (*LoginResponse, error)
 ```
 
-用户名、密码、验证码登录。成功返回 `LoginResponse{UID, ClientID}`，cookie 自动持久化。
+用户名、密码、验证码登录。成功返回 `LoginResponse{UID, ClientID}`，cookie 保存在内存中（如需持久化请调用 `Client.ExportCookies`）。
 
 ---
 
@@ -91,7 +114,7 @@ client.Auth.LoginWithSolver("user", "pass", func(img []byte) (string, error) {
 func (a *AuthService) Logout() error
 ```
 
-登出并清除本地 cookie 和持久化文件。
+登出并清空内存中的 cookie。
 
 ---
 
@@ -112,27 +135,6 @@ func (a *AuthService) Verify() error
 ```
 
 同 `IsAuthenticated`，返回 error 形式。
-
----
-
-### SaveCookies / DeleteSavedCookies
-
-```go
-func (a *AuthService) SaveCookies() error
-func (a *AuthService) DeleteSavedCookies() error
-```
-
-手动持久化 / 清除 cookie。
-
----
-
-### CookiePath
-
-```go
-func (a *AuthService) CookiePath() string
-```
-
-返回 cookie 持久化文件路径。
 
 ---
 

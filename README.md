@@ -49,14 +49,24 @@ func main() {
 }
 ```
 
-## Cookie 持久化
+## Cookie 管理
 
-登录成功后 cookie 自动保存到 `~/.luogu/cookies.json`，下次创建 Client 时自动加载。无需手动管理。
+Cookie 只保存在内存中，SDK 不读写任何文件。是否持久化、存到哪里（文件、数据库、Redis 等）由调用方自行决定。
 
 ```go
-client, _ := luogu.NewClient()                    // 默认路径
-client, _ := luogu.NewClient(luogu.WithCookieFile("./my_cookies.json")) // 自定义路径
-if client.Auth.IsAuthenticated() { ... }           // 自动从文件恢复登录态
+client, _ := luogu.NewClient()
+
+// 从调用方自己的存储恢复登录态
+if data, err := os.ReadFile("cookies.json"); err == nil {
+    client.ImportCookies(data)
+}
+
+// 登录成功后导出，由调用方自行保存
+data, _ := client.ExportCookies()
+os.WriteFile("cookies.json", data, 0600)
+
+// 清空内存中的 cookie（例如登出后）
+client.ClearCookies()
 ```
 
 ## Context 控制
@@ -98,10 +108,9 @@ luoguClient/
 ├── types.go         # 所有公开类型
 ├── constants.go     # 状态/语言常量
 ├── errors.go        # 错误类型
-├── cookiestore.go   # Cookie 持久化
+├── cookiestore.go   # Cookie 导出/导入（仅内存存储）
 ├── retry.go         # 重试逻辑
-├── example/main.go  # 使用示例
-└── test/main.go     # 集成测试
+└── example/main.go  # 使用示例
 ```
 
 ## 错误类型

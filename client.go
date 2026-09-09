@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -23,7 +21,6 @@ type Client struct {
 	httpClient *http.Client
 	cookieJar  *ExportableCookieJar
 	csrfToken  string
-	cookieFile string
 	maxRetries int
 	backoffFn  func(int) time.Duration
 	userAgent  string
@@ -40,13 +37,6 @@ type Client struct {
 
 // ClientOption 客户端配置函数
 type ClientOption func(*Client)
-
-// WithCookieFile 设置 cookie 持久化文件路径
-func WithCookieFile(path string) ClientOption {
-	return func(c *Client) {
-		c.cookieFile = path
-	}
-}
 
 // WithRetry 设置重试参数
 func WithRetry(maxRetries int, backoff func(int) time.Duration) ClientOption {
@@ -80,20 +70,17 @@ func WithContext(ctx context.Context) ClientOption {
 }
 
 // NewClient 创建新的洛谷客户端
+//
+// cookie 仅保存在内存中，客户端不会读写任何文件；如需跨进程复用登录态，
+// 请调用方自行保存 ExportCookies 的结果，并在下次创建客户端后 ImportCookies。
 func NewClient(opts ...ClientOption) (*Client, error) {
-	cookiePath, err := defaultCookiePath()
-	if err != nil {
-		cookiePath = filepath.Join(os.TempDir(), "luogu_cookies.json")
-	}
-
-	jar, err := newExportableCookieJar(cookiePath)
+	jar, err := newExportableCookieJar()
 	if err != nil {
 		return nil, fmt.Errorf("create cookie jar: %w", err)
 	}
 
 	c := &Client{
 		cookieJar:  jar,
-		cookieFile: cookiePath,
 		maxRetries: 3,
 		backoffFn:  defaultBackoff,
 		userAgent:  defaultUA,
@@ -108,9 +95,6 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		opt(c)
 	}
 
-	// 如果用户通过 WithCookieFile 改了路径，同步到 jar
-	jar.setSavePath(c.cookieFile)
-
 	c.Auth = &AuthService{client: c}
 	c.Problem = &ProblemService{client: c}
 	c.Record = &RecordService{client: c}
@@ -118,11 +102,6 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	c.User = &UserService{client: c}
 	c.Discuss = &DiscussService{client: c}
 	c.Contest = &ContestService{client: c}
-
-	// 尝试加载持久化的 cookie（文件不存在不算错误）
-	if err := loadCookies(c.cookieJar, c.cookieFile); err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("load cookies from %s: %w", c.cookieFile, err)
-	}
 
 	return c, nil
 }
@@ -304,12 +283,17 @@ func (c *Client) verifyAuth() error {
 	return nil
 }
 
-// saveCookiesToFile 持久化当前 cookie
-func (c *Client) saveCookiesToFile() error {
-	return saveCookies(c.cookieJar, c.cookieFile)
+// ExportCookies 导出当前会话的全部 cookie（JSON），供调用方自行持久化
+func (c *Client) ExportCookies() ([]byte, error) {
+	return c.cookieJar.Export()
 }
 
-// clearCookies 清空 cookie 并删除持久化文件
-func (c *Client) clearCookies() error {
+// ImportCookies 从 JSON 导入 cookie 到当前会话（用于恢复调用方保存的登录态）
+func (c *Client) ImportCookies(data []byte) error {
+	return c.cookieJar.Import(data)
+}
+
+// ClearCookies 清空内存中的 cookie（例如登出后）
+func (c *Client) ClearCookies() error {
 	return c.cookieJar.Clear()
 }

@@ -16,18 +16,26 @@ func main() {
 	username := os.Args[1]
 	password := os.Args[2]
 
-	// 1. 创建客户端（自动加载持久化的 cookie，若有效则跳过登录）
+	// 1. 创建客户端（cookie 只保存在内存中，SDK 不读写文件）
 	client, err := luogu.NewClient()
 	if err != nil {
 		fmt.Printf("创建客户端失败: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Cookie 文件路径: %s\n", client.Auth.CookiePath())
+	// 2. 从调用方自己的存储恢复 cookie
+	const cookieFile = "cookies.json"
+	if data, err := os.ReadFile(cookieFile); err == nil {
+		if err := client.ImportCookies(data); err != nil {
+			fmt.Printf("恢复 cookie 失败: %v\n", err)
+		} else {
+			fmt.Printf("已从 %s 恢复 cookie\n", cookieFile)
+		}
+	}
 
-	// 2. 检查是否已经登录
+	// 3. 检查是否已经登录
 	if client.Auth.IsAuthenticated() {
-		fmt.Println("已登录（通过持久化 cookie 恢复）")
+		fmt.Println("已登录（本地 cookie 仍然有效）")
 	} else {
 		fmt.Println("未登录，开始登录流程...")
 
@@ -44,9 +52,18 @@ func main() {
 		}
 		fmt.Printf("✓ 登录成功\n")
 		_ = result
+
+		// 登录成功后由调用方自行持久化 cookie
+		if data, err := client.ExportCookies(); err != nil {
+			fmt.Printf("导出 cookie 失败: %v\n", err)
+		} else if err := os.WriteFile(cookieFile, data, 0600); err != nil {
+			fmt.Printf("保存 cookie 到 %s 失败: %v\n", cookieFile, err)
+		} else {
+			fmt.Printf("✓ cookie 已保存到 %s\n", cookieFile)
+		}
 	}
 
-	// 3. 获取题目示例
+	// 4. 获取题目示例
 	fmt.Println("\n--- 获取题目 P1001 ---")
 	problem, err := client.Problem.Get("P1001")
 	if err != nil {

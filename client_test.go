@@ -4,12 +4,13 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestClientNewRequestHeaders(t *testing.T) {
-	jar, _ := newExportableCookieJar("")
+	jar, _ := newExportableCookieJar()
 	c := &Client{
 		cookieJar:  jar,
 		csrfToken:  "test-csrf-token",
@@ -40,7 +41,7 @@ func TestClientNewRequestHeaders(t *testing.T) {
 }
 
 func TestClientNewRequestNoCSRFForGET(t *testing.T) {
-	jar, _ := newExportableCookieJar("")
+	jar, _ := newExportableCookieJar()
 	c := &Client{
 		cookieJar:  jar,
 		csrfToken:  "test-csrf-token",
@@ -69,7 +70,7 @@ func TestClientNoRetryOn4xx(t *testing.T) {
 	}))
 	defer server.Close()
 
-	jar, _ := newExportableCookieJar("")
+	jar, _ := newExportableCookieJar()
 	c := &Client{
 		cookieJar:  jar,
 		maxRetries: 3,
@@ -96,7 +97,7 @@ func TestClientRetryOn5xx(t *testing.T) {
 	}))
 	defer server.Close()
 
-	jar, _ := newExportableCookieJar("")
+	jar, _ := newExportableCookieJar()
 	c := &Client{
 		cookieJar:  jar,
 		maxRetries: 2,
@@ -112,5 +113,35 @@ func TestClientRetryOn5xx(t *testing.T) {
 
 	if callCount != 3 {
 		t.Errorf("5xx should retry, expected 3 calls, got %d", callCount)
+	}
+}
+
+func TestClientCookieExportImportClear(t *testing.T) {
+	c, err := NewClient()
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+
+	if err := c.ImportCookies([]byte(`[{"name":"_uid","value":"42","domain":".luogu.com.cn","path":"/"}]`)); err != nil {
+		t.Fatalf("ImportCookies: %v", err)
+	}
+
+	data, err := c.ExportCookies()
+	if err != nil {
+		t.Fatalf("ExportCookies: %v", err)
+	}
+	if !strings.Contains(string(data), `"42"`) {
+		t.Errorf("exported cookies missing imported value: %s", data)
+	}
+
+	if err := c.ClearCookies(); err != nil {
+		t.Fatalf("ClearCookies: %v", err)
+	}
+	data, err = c.ExportCookies()
+	if err != nil {
+		t.Fatalf("ExportCookies after clear: %v", err)
+	}
+	if string(data) != "[]" {
+		t.Errorf("cookies not cleared, got %s", data)
 	}
 }
